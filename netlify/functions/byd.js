@@ -5,10 +5,22 @@ let estadoByd = {
   modelo: "" // "seal", "atto-2", "sealion-7"
 };
 
+let ultimaAtualizacao = null;
+const TTL_MS = 30000; // 30 segundos
+
+function limparSeExpirado() {
+  if (!ultimaAtualizacao) return;
+
+  const agora = Date.now();
+  if (agora - ultimaAtualizacao > TTL_MS) {
+    estadoByd.modelo = "";
+    ultimaAtualizacao = null;
+  }
+}
+
 exports.handler = async (event, context) => {
   const headersBase = {
     'Content-Type': 'application/json; charset=utf-8',
-    // Se quiser CORS amplo:
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
@@ -22,6 +34,9 @@ exports.handler = async (event, context) => {
       body: ''
     };
   }
+
+  // Sempre checa se já passou dos 30s
+  limparSeExpirado();
 
   // GET -> retorna o JSON (como se fosse o byd.json)
   if (event.httpMethod === 'GET') {
@@ -57,6 +72,7 @@ exports.handler = async (event, context) => {
       }
 
       estadoByd.modelo = modelo;
+      ultimaAtualizacao = Date.now();
 
       return {
         statusCode: 200,

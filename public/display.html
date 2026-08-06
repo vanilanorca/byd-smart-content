@@ -34,7 +34,6 @@
             max-width: 200px;
             height: auto;
         }
-        
 
         .top {
             display: flex;
@@ -97,6 +96,7 @@
         </div>
 
         <div class="video-container">
+            <!-- começa oculto, sem src e sem controls -->
             <video id="videoPlayer" autoplay muted style="display:none;"></video>
             <div id="info" class="info">Aguardando escolha...</div>
         </div>
@@ -174,6 +174,7 @@
 
             videoEl.pause();
             videoEl.removeAttribute('src');
+            videoEl.removeAttribute('controls'); // tira a barra de controles
             videoEl.style.display = 'none';
             infoEl.textContent = 'Aguardando escolha...';
         }
@@ -190,8 +191,9 @@
             }
 
             videoEl.src = src;
+            videoEl.setAttribute('controls', 'controls'); // só mostra controles quando tem vídeo
             videoEl.style.display = 'block';
-            infoEl.textContent = 'Exibindo vídeo do modelo: ' + modelo.toUpperCase();
+            infoEl.textContent = 'Conheça o BYD ' + modelo.toUpperCase();
 
             videoEl.play().catch(() => { });
         }
