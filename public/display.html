@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Display BYD</title>
+    <style>
+        body {
+            margin: 0;
+            background: #2b0040;
+            /* roxo escuro */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(black, rgb(104, 0, 104));
+        }
+
+        header {
+            position: absolute;
+            top: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 0;
+        }
+
+        header img {
+            width: 80%;
+            max-width: 200px;
+            height: auto;
+        }
+        
+
+        .top {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 200px;
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+        }
+
+        video {
+            max-width: 100%;
+            max-height: 60vh;
+            background: #000;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        }
+
+        .info {
+            margin-top: 16px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .qr-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #qrcode {
+            background: #fff;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .qr-label {
+            font-size: 16px;
+            text-align: center;
+            max-width: 220px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <img src="logo.png" alt="">
+    </header>
+
+    <div class="top">
+        <div class="qr-block">
+            <div id="qrcode"></div>
+            <div class="qr-label">
+                Aponte a câmera do celular para o QR code<br>
+                e escolha o modelo BYD.
+            </div>
+        </div>
+
+        <div class="video-container">
+            <video id="videoPlayer" autoplay muted style="display:none;"></video>
+            <div id="info" class="info">Aguardando escolha...</div>
+        </div>
+    </div>
+
+    <!-- Biblioteca simples de QR code (qrcodejs) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        // === QR CODE ===
+        function gerarQrCode() {
+            // URL do site de escolha – mesma origem, arquivo escolher.html
+            const escolherUrl = window.location.origin + '/escolher.html';
+
+            new QRCode(document.getElementById("qrcode"), {
+                text: escolherUrl,
+                width: 180,
+                height: 180,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        // === LÓGICA DO DISPLAY/VÍDEO ===
+        let modeloAtual = null;
+
+        function getVideoSrcByModel(modelo) {
+            switch (modelo) {
+                case 'atto-2':
+                    return 'videos/BYD-ATTO-2.mp4';
+                case 'seal':
+                    return 'videos/BYD-Seal.mp4';
+                case 'sealion-7':
+                    return 'videos/BYD-SEALION-7.mp4';
+                default:
+                    return null;
+            }
+        }
+
+        async function fetchBydJson() {
+            try {
+                const resp = await fetch('/byd.json?_t=' + Date.now(), {
+                    cache: 'no-store'
+                });
+                if (!resp.ok) {
+                    console.error('Erro ao buscar byd.json: HTTP ' + resp.status);
+                    return;
+                }
+
+                const data = await resp.json();
+                const modelo = data.modelo;
+
+                // quando não há modelo (vazio ou expirado), some com o vídeo
+                if (!modelo) {
+                    esconderVideo();
+                    modeloAtual = null;
+                    return;
+                }
+
+                if (modelo === modeloAtual) {
+                    return;
+                }
+
+                modeloAtual = modelo;
+                trocarVideo(modelo);
+            } catch (e) {
+                console.error('Erro ao buscar byd.json:', e);
+            }
+        }
+
+        function esconderVideo() {
+            const videoEl = document.getElementById('videoPlayer');
+            const infoEl = document.getElementById('info');
+
+            videoEl.pause();
+            videoEl.removeAttribute('src');
+            videoEl.style.display = 'none';
+            infoEl.textContent = 'Aguardando escolha...';
+        }
+
+        function trocarVideo(modelo) {
+            const videoEl = document.getElementById('videoPlayer');
+            const infoEl = document.getElementById('info');
+
+            const src = getVideoSrcByModel(modelo);
+            if (!src) {
+                infoEl.textContent = 'Modelo desconhecido: ' + modelo;
+                esconderVideo();
+                return;
+            }
+
+            videoEl.src = src;
+            videoEl.style.display = 'block';
+            infoEl.textContent = 'Exibindo vídeo do modelo: ' + modelo.toUpperCase();
+
+            videoEl.play().catch(() => { });
+        }
+
+        // Inicializa tudo
+        gerarQrCode();
+        setInterval(fetchBydJson, 2000);
+        fetchBydJson();
+    </script>
+</body>
+
+</html>
